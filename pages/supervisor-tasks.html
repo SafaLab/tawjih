@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>المهام | متابعة التوجيه</title>
+<script>
+  (function () {
+    var t = localStorage.getItem("tawjih_theme");
+    document.documentElement.setAttribute("data-theme", t === "dark" ? "dark" : "light");
+  })();
+</script>
+<link rel="stylesheet" href="../assets/css/main.css" />
+<link rel="stylesheet" href="../assets/css/components.css" />
+<link rel="stylesheet" href="../assets/css/dashboard.css" />
+</head>
+<body>
+
+<div class="app-shell">
+  <div class="sidebar-backdrop"></div>
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="emoji">🏫</span>
+      <div>
+        <h2>متابعة التوجيه</h2>
+        <p>إدارة غرب القاهرة</p>
+      </div>
+    </div>
+
+    <nav class="nav-list">
+      <a class="nav-item" href="supervisor-dashboard.html"><span class="emoji">📊</span> النظرة العامة</a>
+      <a class="nav-item" href="supervisor-members.html"><span class="emoji">🧑‍🏫</span> الموجّهون</a>
+      <a class="nav-item active" href="supervisor-tasks.html"><span class="emoji">📋</span> المهام</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="user-chip">
+        <div class="avatar" id="userAvatar">؟</div>
+        <div class="info">
+          <p id="userName">—</p>
+          <p id="userRole">—</p>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-block btn-sm" id="logoutBtn">🚪 تسجيل الخروج</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div><button class="menu-toggle">☰</button></div>
+      <div>
+        <h1>📋 المهام</h1>
+        <p>وزّع المهام وتابع تقدّمها أول بأول</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="تبديل الثيم"></button>
+        <button class="btn btn-primary" id="addTaskBtn">➕ إضافة مهمة</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <select id="filterStatus">
+          <option value="">كل الحالات</option>
+          <option value="pending">🕓 لم يبدأ</option>
+          <option value="in_progress">🔄 جاري التنفيذ</option>
+          <option value="done">✅ منجزة</option>
+        </select>
+        <select id="filterMember">
+          <option value="">كل الموجّهين</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>المهمة</th>
+              <th>الموجّه</th>
+              <th>الموعد</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="tasksBody"></tbody>
+        </table>
+      </div>
+
+      <div class="empty-state hidden" id="emptyState">
+        <span class="emoji">📋</span>
+        لسه مفيش مهام، دوس "إضافة مهمة" عشان تبدأ التوزيع
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- مودال إضافة/تعديل مهمة -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle">إضافة مهمة جديدة ➕</h3>
+      <button class="modal-close" data-close-modal>✕</button>
+    </div>
+    <form id="taskForm">
+      <div class="field">
+        <label>📝 عنوان المهمة</label>
+        <input type="text" id="tTitle" required placeholder="مثال: زيارة مدرسة الزهراء الإعدادية" />
+      </div>
+      <div class="field">
+        <label>🏷️ نوع المهمة</label>
+        <select id="tType" required></select>
+      </div>
+      <div class="field">
+        <label>🧑‍🏫 الموجّه المسؤول</label>
+        <select id="tMember" required></select>
+      </div>
+      <div class="field">
+        <label>📅 الموعد النهائي</label>
+        <input type="date" id="tDue" />
+      </div>
+      <div class="field">
+        <label>🗒️ تفاصيل إضافية</label>
+        <textarea id="tDesc" rows="3" placeholder="اختياري"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close-modal>إلغاء</button>
+        <button type="submit" class="btn btn-primary" id="saveTaskBtn">💾 حفظ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script type="module" src="../assets/js/supervisor/tasks.js"></script>
+<script type="module">
+  import { initTheme, bindThemeToggle } from "../assets/js/theme.js";
+  initTheme();
+  bindThemeToggle(document.getElementById("themeToggle"));
+</script>
+<script>
+  document.querySelector(".menu-toggle")?.addEventListener("click", () => {
+    document.querySelector(".sidebar").classList.add("open");
+    document.querySelector(".sidebar-backdrop").classList.add("show");
+  });
+  document.querySelector(".sidebar-backdrop")?.addEventListener("click", () => {
+    document.querySelector(".sidebar").classList.remove("open");
+    document.querySelector(".sidebar-backdrop").classList.remove("show");
+  });
+</script>
+</body>
+</html>

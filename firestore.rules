@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && myProfile().role == 'admin';
+    }
+
+    function isOwner(resourceSupervisorId) {
+      return isSignedIn() && request.auth.uid == resourceSupervisorId;
+    }
+
+    // ===== ملفات المستخدمين (المسؤولين والمدير العام) =====
+    match /users/{userId} {
+      // أي مستخدم مسجل دخول يقدر يقرأ بروفايله، والمدير العام يقدر يقرأ الكل
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // إنشاء/تعديل/حذف حسابات التوجيه يكون من المدير العام بس
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ===== الموجّهون (أعضاء كل توجيه) =====
+    match /members/{memberId} {
+      allow read: if isAdmin() || isOwner(resource.data.supervisorId);
+      allow create: if isSignedIn() && request.resource.data.supervisorId == request.auth.uid;
+      allow update, delete: if isAdmin() || isOwner(resource.data.supervisorId);
+    }
+
+    // ===== المهام =====
+    match /tasks/{taskId} {
+      allow read: if isAdmin() || isOwner(resource.data.supervisorId);
+      allow create: if isSignedIn() && request.resource.data.supervisorId == request.auth.uid;
+      allow update, delete: if isAdmin() || isOwner(resource.data.supervisorId);
+    }
+  }
+}

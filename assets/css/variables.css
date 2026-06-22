@@ -1,0 +1,82 @@
+/* ============================================
+   نظام التصميم - متابعة وتوجيه غرب القاهرة
+   الوضع الفاتح (Light) هو الافتراضي.
+   الوضع الداكن (Dark) بيتفعّل بإضافة data-theme="dark" على <html>
+   (شوف assets/js/theme.js)
+   ============================================ */
+:root {
+  /* ألوان أساسية — الوضع الفاتح (افتراضي) */
+  --bg: #F3F5FA;
+  --bg-soft: #FFFFFF;
+  --card: #FFFFFF;
+  --card-hover: #F0F3FA;
+  --border: #E2E7F1;
+
+  /* تدرج الهوية (ثابت في الوضعين) */
+  --primary: #2E6FF2;
+  --primary-2: #00A88F;
+  --gradient: linear-gradient(120deg, #2E6FF2 0%, #00A88F 100%);
+
+  /* حالات */
+  --success: #1FAE63;
+  --success-bg: rgba(31, 174, 99, 0.10);
+  --warning: #C97D12;
+  --warning-bg: rgba(201, 125, 18, 0.10);
+  --danger: #E0394B;
+  --danger-bg: rgba(224, 57, 75, 0.10);
+  --info: #3B6FE0;
+
+  /* نصوص */
+  --text: #1A2236;
+  --text-dim: #5B6478;
+  --text-faint: #9AA3B8;
+
+  /* ظلال */
+  --shadow: 0 10px 30px rgba(20, 30, 60, 0.10);
+  --shadow-soft: 0 4px 14px rgba(20, 30, 60, 0.08);
+
+  /* أبعاد */
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 24px;
+
+  /* خطوط */
+  --font: 'Tajawal', 'Segoe UI', sans-serif;
+
+  /* مسافات */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+}
+
+/* ===== الوضع الداكن ===== */
+[data-theme="dark"] {
+  --bg: #0E1525;
+  --bg-soft: #131C30;
+  --card: #161F36;
+  --card-hover: #1B2540;
+  --border: #232E4C;
+
+  --primary: #2E6FF2;
+  --primary-2: #00C2A8;
+  --gradient: linear-gradient(120deg, #2E6FF2 0%, #00C2A8 100%);
+
+  --success: #3DDC84;
+  --success-bg: rgba(61, 220, 132, 0.12);
+  --warning: #FFB23E;
+  --warning-bg: rgba(255, 178, 62, 0.12);
+  --danger: #FF5C6C;
+  --danger-bg: rgba(255, 92, 108, 0.12);
+  --info: #6E9CFF;
+
+  --text: #ECF0FA;
+  --text-dim: #97A1C2;
+  --text-faint: #5F698A;
+
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.25);
+}

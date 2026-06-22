@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>لوحة التحكم | متابعة التوجيه</title>
+<script>
+  (function () {
+    var t = localStorage.getItem("tawjih_theme");
+    document.documentElement.setAttribute("data-theme", t === "dark" ? "dark" : "light");
+  })();
+</script>
+<link rel="stylesheet" href="../assets/css/main.css" />
+<link rel="stylesheet" href="../assets/css/components.css" />
+<link rel="stylesheet" href="../assets/css/dashboard.css" />
+</head>
+<body>
+
+<div class="app-shell">
+  <div class="sidebar-backdrop"></div>
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="emoji">🏫</span>
+      <div>
+        <h2>متابعة التوجيه</h2>
+        <p>إدارة غرب القاهرة</p>
+      </div>
+    </div>
+
+    <nav class="nav-list">
+      <a class="nav-item active" href="supervisor-dashboard.html"><span class="emoji">📊</span> النظرة العامة</a>
+      <a class="nav-item" href="supervisor-members.html"><span class="emoji">🧑‍🏫</span> الموجّهون</a>
+      <a class="nav-item" href="supervisor-tasks.html"><span class="emoji">📋</span> المهام</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="user-chip">
+        <div class="avatar" id="userAvatar">؟</div>
+        <div class="info">
+          <p id="userName">—</p>
+          <p id="userRole">—</p>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-block btn-sm" id="logoutBtn">🚪 تسجيل الخروج</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <button class="menu-toggle">☰</button>
+      </div>
+      <div>
+        <h1 id="pageGreeting">أهلاً بيك 👋</h1>
+        <p>نظرة سريعة على أداء فريقك اليوم</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="تبديل الثيم"></button>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card accent">
+        <span class="emoji">🧑‍🏫</span>
+        <div class="num" id="statMembers">0</div>
+        <div class="lbl">عدد الموجّهين</div>
+      </div>
+      <div class="stat-card accent">
+        <span class="emoji">📋</span>
+        <div class="num" id="statTasks">0</div>
+        <div class="lbl">إجمالي المهام</div>
+      </div>
+      <div class="stat-card accent">
+        <span class="emoji">✅</span>
+        <div class="num" id="statDone">0</div>
+        <div class="lbl">مهام منجزة</div>
+      </div>
+      <div class="stat-card accent">
+        <span class="emoji">⏰</span>
+        <div class="num" id="statLate">0</div>
+        <div class="lbl">مهام متأخرة</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">🏆 ترتيب الموجّهين</div>
+        <div class="leaderboard" id="leaderboard">
+          <div class="page-loader"><div class="spinner"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🕓 آخر المهام</div>
+        <div class="leaderboard" id="recentTasks">
+          <div class="page-loader"><div class="spinner"></div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script type="module" src="../assets/js/supervisor/dashboard.js"></script>
+<script type="module">
+  import { initTheme, bindThemeToggle } from "../assets/js/theme.js";
+  initTheme();
+  bindThemeToggle(document.getElementById("themeToggle"));
+</script>
+<script>
+  document.querySelector(".menu-toggle")?.addEventListener("click", () => {
+    document.querySelector(".sidebar").classList.add("open");
+    document.querySelector(".sidebar-backdrop").classList.add("show");
+  });
+  document.querySelector(".sidebar-backdrop")?.addEventListener("click", () => {
+    document.querySelector(".sidebar").classList.remove("open");
+    document.querySelector(".sidebar-backdrop").classList.remove("show");
+  });
+</script>
+</body>
+</html>

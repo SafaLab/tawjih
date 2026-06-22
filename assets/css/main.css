@@ -1,0 +1,189 @@
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
+@import url('variables.css');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  direction: rtl;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 15% 10%, rgba(46, 111, 242, 0.08), transparent 40%),
+    radial-gradient(circle at 85% 90%, rgba(0, 168, 143, 0.06), transparent 40%);
+  background-attachment: fixed;
+  transition: background-color .2s ease, color .2s ease;
+}
+
+[data-theme="dark"] body {
+  background-image:
+    radial-gradient(circle at 15% 10%, rgba(46, 111, 242, 0.18), transparent 40%),
+    radial-gradient(circle at 85% 90%, rgba(0, 194, 168, 0.14), transparent 40%);
+}
+
+.card, .stat-card, .auth-card, .modal, .toast, .lb-row, .sidebar {
+  transition: background-color .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+a { color: inherit; text-decoration: none; }
+ul { list-style: none; }
+button, input, select, textarea { font-family: var(--font); }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+:focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: 2px;
+}
+
+/* ===== صفحة تسجيل الدخول ===== */
+.auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-5);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-7) var(--sp-6);
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: var(--gradient);
+}
+
+.auth-logo {
+  text-align: center;
+  margin-bottom: var(--sp-6);
+}
+
+.auth-logo .emoji { font-size: 42px; display: block; margin-bottom: var(--sp-2); }
+.auth-logo h1 { font-size: 20px; font-weight: 800; }
+.auth-logo p { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+.field { margin-bottom: var(--sp-4); }
+.field label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: var(--sp-2);
+  font-weight: 500;
+}
+
+.field input, .field select, .field textarea {
+  width: 100%;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  color: var(--text);
+  font-size: 14px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--primary-2);
+  box-shadow: 0 0 0 3px rgba(0, 194, 168, 0.15);
+}
+
+.field-error {
+  color: var(--danger);
+  font-size: 12px;
+  margin-top: 6px;
+  display: none;
+}
+
+.auth-error {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: var(--sp-4);
+  display: none;
+}
+
+.auth-foot {
+  text-align: center;
+  margin-top: var(--sp-5);
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+/* ===== حالة تحميل عامة ===== */
+.app-loader {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  z-index: 999;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.spinner {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary-2);
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.app-loader span { color: var(--text-dim); font-size: 13px; }
+
+.hidden { display: none !important; }
+
+/* ===== شريط وضع التطوير المحلي ===== */
+.dev-banner {
+  position: relative;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  background: linear-gradient(120deg, rgba(46,111,242,.16), rgba(0,168,143,.16));
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px 16px;
+  text-align: center;
+}
+.dev-banner-actions { display: flex; align-items: center; gap: 8px; }
+.dev-banner button {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 100px;
+  padding: 4px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.dev-banner button:hover { filter: brightness(0.97); }
+#devBannerCloseBtn { padding: 4px 9px; }
