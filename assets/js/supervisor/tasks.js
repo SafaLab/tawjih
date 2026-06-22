@@ -8,7 +8,7 @@ import {
 } from "../firebase-config.js";
 import {
   showToast, openModal, closeModal, bindModalDismiss, initials, escapeHtml,
-  formatDate, STATUS_LABELS, TASK_TYPES, isOverdue, confirmAction,
+  formatDate, STATUS_LABELS, TASK_TYPES, isOverdue, confirmAction, bindConfirmModal,
 } from "../utils.js";
 
 const profile = await guardPage("supervisor");
@@ -17,6 +17,7 @@ document.getElementById("userRole").textContent = profile.supervisionName || "م
 document.getElementById("userAvatar").textContent = initials(profile.name);
 document.getElementById("logoutBtn").addEventListener("click", logout);
 bindModalDismiss();
+bindConfirmModal();
 
 let allTasks = [];
 let allMembers = [];

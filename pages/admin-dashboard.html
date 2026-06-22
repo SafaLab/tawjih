@@ -476,7 +476,28 @@
   </div>
 </div>
 
-<!-- confirm modal مُدار من utils.js confirmAction() -->
+
+<!-- ===== Confirm Modal عالمي ===== -->
+<div class="gc-overlay" id="globalConfirmModal" role="dialog" aria-modal="true" aria-labelledby="gcTitle">
+  <div class="gc-box">
+    <div class="gc-icon">
+      <svg viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="28" fill="rgba(224,57,75,.12)"/><path d="M20 36l8-8m0 0l8-8m-8 8l-8-8m8 8l8 8" stroke="#E0394B" stroke-width="3" stroke-linecap="round"/></svg>
+    </div>
+    <h3 class="gc-title" id="gcTitle">تأكيد الحذف</h3>
+    <p class="gc-msg" id="gcMsg">هل أنت متأكد من هذا الإجراء؟</p>
+    <p class="gc-warn">⚠️ لا يمكن التراجع عن هذا الإجراء بعد تأكيده</p>
+    <div class="gc-actions">
+      <button class="gc-btn-cancel" id="gcCancelBtn" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        إلغاء
+      </button>
+      <button class="gc-btn-ok" id="gcOkBtn" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+        نعم، احذف
+      </button>
+    </div>
+  </div>
+</div>
 
 <script type="module" src="../assets/js/admin/dashboard.js"></script>
 <script type="module">

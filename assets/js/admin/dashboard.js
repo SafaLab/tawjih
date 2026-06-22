@@ -7,7 +7,7 @@ import {
   collection, getDocs, query, where, doc, setDoc, serverTimestamp, deleteDoc,
 } from "../firebase-config.js";
 import {
-  showToast, openModal, closeModal, bindModalDismiss, initials, escapeHtml, isOverdue, formatDate, confirmAction,
+  showToast, openModal, closeModal, bindModalDismiss, initials, escapeHtml, isOverdue, formatDate, confirmAction, bindConfirmModal,
 } from "../utils.js";
 
 const profile = await guardPage("admin");
@@ -15,6 +15,7 @@ document.getElementById("userName").textContent = profile.name;
 document.getElementById("userAvatar").textContent = initials(profile.name);
 document.getElementById("logoutBtn").addEventListener("click", logout);
 bindModalDismiss();
+bindConfirmModal();
 
 let supervisors = [];
 let allMembers = [];
@@ -298,7 +299,6 @@ function renderLateTasks() {
     }).join("")}`;
 }
 
-// ===== حذف مع تأكيد مخصص =====
 async function deleteSupervisor(uid) {
   const s = supervisors.find(x => x.id === uid);
   const ok = await confirmAction(
@@ -308,7 +308,7 @@ async function deleteSupervisor(uid) {
   if (!ok) return;
   try {
     await deleteDoc(doc(db, "users", uid));
-    showToast("تم حذف حساب التوجيه");
+    showToast("تم حذف حساب التوجيه بنجاح");
     loadAll();
   } catch (e) {
     showToast("حصل خطأ أثناء الحذف", "error");
@@ -366,220 +366,180 @@ async function loadXLSX() {
   return new Promise((resolve, reject) => {
     const s = document.createElement("script");
     s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
-    s.onload = () => resolve(window.XLSX);
-    s.onerror = reject;
+    s.onload  = () => resolve(window.XLSX);
+    s.onerror = () => {
+      const s2 = document.createElement("script");
+      s2.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+      s2.onload  = () => resolve(window.XLSX);
+      s2.onerror = reject;
+      document.head.appendChild(s2);
+    };
     document.head.appendChild(s);
   });
 }
 
-// كفر شيت موحّد
-function buildCoverSheet(XLSX, wb, reportTitle) {
-  const today = new Date().toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" });
-  const ws = XLSX.utils.aoa_to_sheet([
-    ["إدارة غرب القاهرة التعليمية"],
-    ["مكتب السيد مدير الإدارة"],
-    [""],
-    [reportTitle],
-    [""],
-    ["تاريخ الإصدار:", today],
-    ["عدد التوجيهات:", supervisors.length],
-    ["إجمالي الموجّهين:", allMembers.length],
-    ["إجمالي المهام:", allTasks.length],
-    ["المهام المنجزة:", allTasks.filter(t => t.status === "done").length],
-    ["المهام المتأخرة:", allTasks.filter(t => isOverdue(t)).length],
-  ]);
+const CLR = {
+  header_bg:"1B3A6B",header_fg:"FFFFFF",cover_bg:"EEF3FC",
+  cover_title:"1B3A6B",cover_sub:"2E6FF2",alt_row:"F4F7FF",border:"C7D2E8",
+  done_fg:"1A7A47",done_bg:"E6F4ED",late_fg:"B91C1C",late_bg:"FEE2E2",
+  warn_fg:"92400E",warn_bg:"FEF3C7",
+};
 
-  // تنسيق العرض
-  ws["!cols"] = [{ wch: 30 }, { wch: 40 }];
-  ws["A1"] = { v: "إدارة غرب القاهرة التعليمية", t: "s", s: { font: { bold: true, sz: 18 }, alignment: { horizontal: "center" } } };
-  ws["A2"] = { v: "مكتب السيد مدير الإدارة", t: "s", s: { font: { bold: true, sz: 14 }, alignment: { horizontal: "center" } } };
-  ws["A4"] = { v: reportTitle, t: "s", s: { font: { bold: true, sz: 14, color: { rgb: "2E6FF2" } } } };
-  ws["!merges"] = [
-    { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } },
-    { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } },
-    { s: { r: 3, c: 0 }, e: { r: 3, c: 1 } },
-  ];
-
-  XLSX.utils.book_append_sheet(wb, ws, "📋 بيانات التقرير");
+function XLSX_enc(r,c2){
+  const col=c2<26?String.fromCharCode(65+c2):String.fromCharCode(64+Math.floor(c2/26))+String.fromCharCode(65+(c2%26));
+  return col+(r+1);
 }
 
-function styleHeader(ws, range, XLSX) {
-  for (let C = range.s.c; C <= range.e.c; C++) {
-    const addr = XLSX.utils.encode_cell({ r: 0, c: C });
-    if (!ws[addr]) continue;
-    ws[addr].s = {
-      font: { bold: true, color: { rgb: "FFFFFF" }, sz: 12 },
-      fill: { patternType: "solid", fgColor: { rgb: "2E6FF2" } },
-      alignment: { horizontal: "center", wrapText: true },
-      border: {
-        bottom: { style: "medium", color: { rgb: "FFFFFF" } },
-      },
-    };
-  }
+function makeCell(v,opts={}){
+  const{bold=false,sz=12,color="000000",bg=null,hAlign="right",wrap=true,border=true}=opts;
+  const s={
+    font:{name:"Cairo",sz,bold,color:{rgb:color}},
+    alignment:{horizontal:hAlign,vertical:"center",wrapText:wrap,readingOrder:2},
+  };
+  if(bg)s.fill={patternType:"solid",fgColor:{rgb:bg}};
+  if(border)s.border={
+    top:{style:"thin",color:{rgb:CLR.border}},bottom:{style:"thin",color:{rgb:CLR.border}},
+    left:{style:"thin",color:{rgb:CLR.border}},right:{style:"thin",color:{rgb:CLR.border}},
+  };
+  return{v,t:typeof v==="number"?"n":"s",s};
 }
 
-// تقرير شامل
-async function exportAll() {
-  const XLSX = await loadXLSX();
-  const wb   = XLSX.utils.book_new();
-  buildCoverSheet(XLSX, wb, "التقرير الشامل للإدارة");
-
-  // شيت التوجيهات
-  const supData = supervisors.map(s => {
-    const sM   = allMembers.filter(m => m.supervisorId === s.id);
-    const sT   = allTasks.filter(t => t.supervisorId === s.id);
-    const done = sT.filter(t => t.status === "done").length;
-    const late = sT.filter(t => isOverdue(t)).length;
-    return {
-      "اسم التوجيه":   s.supervisionName || s.name,
-      "المسؤول":       s.name,
-      "البريد":        s.email,
-      "عدد الموجّهين": sM.length,
-      "إجمالي المهام": sT.length,
-      "منجزة":         done,
-      "جاري":          sT.filter(t => t.status === "in_progress").length,
-      "لم تبدأ":       sT.filter(t => t.status === "pending").length,
-      "متأخرة":        late,
-      "نسبة الإنجاز":  sT.length ? Math.round(done/sT.length*100) + "%" : "0%",
-    };
+function buildStyledSheet(headers,rows,colWidths){
+  const ws={};
+  headers.forEach((h,c2)=>{
+    ws[XLSX_enc(0,c2)]=makeCell(h,{bold:true,sz:13,color:CLR.header_fg,bg:CLR.header_bg,hAlign:"center"});
   });
-  const ws1 = XLSX.utils.json_to_sheet(supData);
-  ws1["!cols"] = [30,20,30,15,15,10,10,10,10,15].map(w => ({ wch: w }));
-  styleHeader(ws1, XLSX.utils.decode_range(ws1["!ref"]), XLSX);
-  XLSX.utils.book_append_sheet(wb, ws1, "🏛️ التوجيهات");
-
-  // شيت الموجّهين
-  const memData = allMembers.map(m => {
-    const mT   = allTasks.filter(t => t.memberId === m.id);
-    const done = mT.filter(t => t.status === "done").length;
-    const sup  = supervisors.find(s => s.id === m.supervisorId);
-    return {
-      "الاسم":         m.name,
-      "التوجيه":       sup?.supervisionName || sup?.name || "—",
-      "المدرسة":       m.school || "—",
-      "الهاتف":        m.phone || "—",
-      "إجمالي المهام": mT.length,
-      "منجزة":         done,
-      "متأخرة":        mT.filter(t => isOverdue(t)).length,
-      "نسبة الإنجاز":  mT.length ? Math.round(done/mT.length*100) + "%" : "0%",
-    };
-  }).sort((a,b) => parseInt(b["منجزة"]) - parseInt(a["منجزة"]));
-  const ws2 = XLSX.utils.json_to_sheet(memData);
-  ws2["!cols"] = [25,25,25,15,15,10,10,15].map(w => ({ wch: w }));
-  styleHeader(ws2, XLSX.utils.decode_range(ws2["!ref"]), XLSX);
-  XLSX.utils.book_append_sheet(wb, ws2, "🧑‍🏫 الموجّهون");
-
-  // شيت المهام
-  const taskData = allTasks.map(t => ({
-    "عنوان المهمة":  t.title,
-    "الموجّه":       t.memberName || "—",
-    "التوجيه":       t.supervisorName || "—",
-    "النوع":         t.type || "—",
-    "الحالة":        t.status === "done" ? "منجزة" : t.status === "in_progress" ? "جاري" : "لم تبدأ",
-    "تاريخ الاستحقاق": formatDate(t.dueDate),
-    "متأخرة":        isOverdue(t) ? "نعم" : "لا",
-    "ملاحظات":       t.notes || "—",
-  }));
-  const ws3 = XLSX.utils.json_to_sheet(taskData);
-  ws3["!cols"] = [30,20,25,15,12,18,10,30].map(w => ({ wch: w }));
-  styleHeader(ws3, XLSX.utils.decode_range(ws3["!ref"]), XLSX);
-  XLSX.utils.book_append_sheet(wb, ws3, "📋 المهام");
-
-  XLSX.writeFile(wb, `تقرير_شامل_غرب_القاهرة_${new Date().toISOString().slice(0,10)}.xlsx`);
-  showToast("تم تصدير التقرير الشامل بنجاح 📊");
+  rows.forEach((row,r)=>{
+    const isAlt=r%2===1,defBg=isAlt?CLR.alt_row:"FFFFFF";
+    row.forEach((val,c2)=>{
+      let o={sz:12,bg:defBg};
+      if(typeof val==="string"){
+        if(val==="منجزة"||val==="لا") o={...o,color:CLR.done_fg,bg:isAlt?"DCF0E6":CLR.done_bg};
+        else if(val==="نعم"||val.includes("متأخرة")) o={...o,color:CLR.late_fg,bg:isAlt?"FCD9D9":CLR.late_bg};
+        else if(val==="جاري التنفيذ") o={...o,color:CLR.warn_fg,bg:isAlt?"FDE9B0":CLR.warn_bg};
+      }
+      if(typeof val==="number")o.hAlign="center";
+      ws[XLSX_enc(r+1,c2)]=makeCell(val??"",o);
+    });
+  });
+  ws["!ref"]=`A1:${XLSX_enc(rows.length,headers.length-1)}`;
+  ws["!cols"]=colWidths.map(w=>({wch:w}));
+  ws["!rows"]=[{hpt:36},...rows.map(()=>({hpt:22}))];
+  ws["!sheetView"]=[{rightToLeft:true}];
+  return ws;
 }
 
-async function exportMembers() {
-  const XLSX = await loadXLSX();
-  const wb   = XLSX.utils.book_new();
-  buildCoverSheet(XLSX, wb, "تقرير الموجّهين والأخصائيين");
+function buildCoverSheet(XLSX,wb,reportTitle){
+  const today=new Date().toLocaleDateString("ar-EG",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+  const done=allTasks.filter(t=>t.status==="done").length;
+  const late=allTasks.filter(t=>isOverdue(t)).length;
+  const pct=allTasks.length?Math.round(done/allTasks.length*100):0;
+  const ws={};
+  const cc=(v,sz,color,bg,bold=true)=>({v,t:"s",s:{
+    font:{name:"Cairo",sz,bold,color:{rgb:color}},
+    fill:{patternType:"solid",fgColor:{rgb:bg}},
+    alignment:{horizontal:"center",vertical:"center",wrapText:false,readingOrder:2},
+  }});
+  ws["A1"]=cc("إدارة غرب القاهرة التعليمية",22,CLR.cover_title,CLR.cover_bg);
+  ws["A2"]=cc("مكتب السيد مدير الإدارة — توجيه الصحافة",14,CLR.header_fg,CLR.header_bg);
+  ws["A3"]={v:"",t:"s",s:{fill:{patternType:"solid",fgColor:{rgb:CLR.cover_bg}}}};
+  ws["A4"]=cc(reportTitle,18,CLR.cover_sub,CLR.cover_bg);
+  ws["A5"]=cc(`📅 تاريخ الإصدار: ${today}`,12,"4A5568",CLR.cover_bg,false);
+  ws["A6"]={v:"",t:"s",s:{fill:{patternType:"solid",fgColor:{rgb:CLR.cover_bg}}}};
+  const bd={top:{style:"thin",color:{rgb:CLR.border}},bottom:{style:"thin",color:{rgb:CLR.border}},left:{style:"thin",color:{rgb:CLR.border}},right:{style:"thin",color:{rgb:CLR.border}}};
+  const stats=[
+    ["📊 إجمالي التوجيهات",supervisors.length,CLR.header_bg,"FFFFFF"],
+    ["👥 إجمالي الموجّهين",allMembers.length,"1A7A47",CLR.done_bg],
+    ["📋 إجمالي المهام",allTasks.length,"1B3A6B",CLR.cover_bg],
+    ["✅ المهام المنجزة",done,"1A7A47",CLR.done_bg],
+    ["⏰ المهام المتأخرة",late,CLR.late_fg,CLR.late_bg],
+    ["📈 نسبة الإنجاز الكلية",`${pct}%`,CLR.warn_fg,CLR.warn_bg],
+  ];
+  stats.forEach(([label,val,fg,bg],i)=>{
+    ws[`A${7+i}`]={v:label,t:"s",s:{font:{name:"Cairo",sz:13,bold:true,color:{rgb:"1B3A6B"}},fill:{patternType:"solid",fgColor:{rgb:CLR.cover_bg}},alignment:{horizontal:"right",vertical:"center",readingOrder:2},border:bd}};
+    ws[`B${7+i}`]={v:typeof val==="number"?val:val,t:typeof val==="number"?"n":"s",s:{font:{name:"Cairo",sz:15,bold:true,color:{rgb:fg}},fill:{patternType:"solid",fgColor:{rgb:bg}},alignment:{horizontal:"center",vertical:"center",readingOrder:2},border:bd}};
+  });
+  ws["!ref"]="A1:B12";
+  ws["!cols"]=[{wch:34},{wch:20}];
+  ws["!rows"]=[{hpt:60},{hpt:36},{hpt:12},{hpt:46},{hpt:28},{hpt:12},...stats.map(()=>({hpt:30}))];
+  ws["!merges"]=[{s:{r:0,c:0},e:{r:0,c:1}},{s:{r:1,c:0},e:{r:1,c:1}},{s:{r:2,c:0},e:{r:2,c:1}},{s:{r:3,c:0},e:{r:3,c:1}},{s:{r:4,c:0},e:{r:4,c:1}},{s:{r:5,c:0},e:{r:5,c:1}}];
+  ws["!sheetView"]=[{rightToLeft:true}];
+  XLSX.utils.book_append_sheet(wb,ws,"📋 غلاف التقرير");
+}
 
-  const data = allMembers.map(m => {
-    const mT   = allTasks.filter(t => t.memberId === m.id);
-    const done = mT.filter(t => t.status === "done").length;
-    const late = mT.filter(t => isOverdue(t)).length;
-    const sup  = supervisors.find(s => s.id === m.supervisorId);
-    return {
-      "الاسم":              m.name,
-      "التوجيه التابع له": sup?.supervisionName || sup?.name || "—",
-      "المدرسة / الجهة":   m.school || "—",
-      "رقم الهاتف":        m.phone || "—",
-      "إجمالي المهام":     mT.length,
-      "المهام المنجزة":    done,
-      "جاري التنفيذ":      mT.filter(t => t.status === "in_progress").length,
-      "لم تبدأ بعد":       mT.filter(t => t.status === "pending").length,
-      "المهام المتأخرة":   late,
-      "نسبة الإنجاز":      mT.length ? Math.round(done/mT.length*100) + "%" : "0%",
-      "الترتيب":           "",
-    };
-  }).sort((a,b) => parseInt(b["المهام المنجزة"]) - parseInt(a["المهام المنجزة"]))
-    .map((r,i) => ({ ...r, "الترتيب": i+1 }));
+async function exportAll(){
+  const XLSX=await loadXLSX();const wb=XLSX.utils.book_new();
+  buildCoverSheet(XLSX,wb,"التقرير الشامل للإدارة");
+  const supRows=supervisors.map(s=>{
+    const sM=allMembers.filter(m=>m.supervisorId===s.id);
+    const sT=allTasks.filter(t=>t.supervisorId===s.id);
+    const done=sT.filter(t=>t.status==="done").length;
+    return[s.supervisionName||s.name,s.name,s.email,sM.length,sT.length,done,
+      sT.filter(t=>t.status==="in_progress").length,sT.filter(t=>t.status==="pending").length,
+      sT.filter(t=>isOverdue(t)).length,sT.length?Math.round(done/sT.length*100)+"%":"0%"];
+  });
+  XLSX.utils.book_append_sheet(wb,buildStyledSheet(["اسم التوجيه","المسؤول","البريد","الموجّهون","المهام","منجزة","جاري","لم تبدأ","متأخرة","الإنجاز"],supRows,[28,20,28,12,10,10,10,10,10,12]),"🏛️ التوجيهات");
+  const memRows=allMembers.map(m=>{
+    const mT=allTasks.filter(t=>t.memberId===m.id);
+    const done=mT.filter(t=>t.status==="done").length;
+    const sup=supervisors.find(s=>s.id===m.supervisorId);
+    return[m.name,sup?.supervisionName||"—",m.school||"—",m.phone||"—",mT.length,done,
+      mT.filter(t=>t.status==="in_progress").length,mT.filter(t=>t.status==="pending").length,
+      mT.filter(t=>isOverdue(t)).length,mT.length?Math.round(done/mT.length*100)+"%":"0%"];
+  }).sort((a,b)=>b[5]-a[5]);
+  XLSX.utils.book_append_sheet(wb,buildStyledSheet(["الاسم","التوجيه","المدرسة","الهاتف","المهام","منجزة","جاري","لم تبدأ","متأخرة","الإنجاز"],memRows,[24,22,22,14,10,10,10,10,10,12]),"🧑‍🏫 الموجّهون");
+  const taskRows=allTasks.map(t=>[t.title,t.memberName||"—",t.supervisorName||"—",t.type||"—",
+    t.status==="done"?"منجزة":t.status==="in_progress"?"جاري التنفيذ":"لم تبدأ",
+    formatDate(t.dueDate),isOverdue(t)?"نعم":"لا",t.notes||"—"]);
+  XLSX.utils.book_append_sheet(wb,buildStyledSheet(["عنوان المهمة","الموجّه","التوجيه","النوع","الحالة","الاستحقاق","متأخرة","ملاحظات"],taskRows,[30,20,22,14,14,16,10,28]),"📋 المهام");
+  XLSX.writeFile(wb,`تقرير_شامل_غرب_القاهرة_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast("تم تصدير التقرير الشامل 📊");
+}
 
-  const ws = XLSX.utils.json_to_sheet(data);
-  ws["!cols"] = [25,25,25,16,14,14,14,14,14,15,10].map(w => ({ wch: w }));
-  styleHeader(ws, XLSX.utils.decode_range(ws["!ref"]), XLSX);
-  XLSX.utils.book_append_sheet(wb, ws, "🧑‍🏫 الموجّهون");
-  XLSX.writeFile(wb, `تقرير_الموجهين_غرب_القاهرة_${new Date().toISOString().slice(0,10)}.xlsx`);
+async function exportMembers(){
+  const XLSX=await loadXLSX();const wb=XLSX.utils.book_new();
+  buildCoverSheet(XLSX,wb,"تقرير الموجّهين والأخصائيين");
+  const rows=allMembers.map(m=>{
+    const mT=allTasks.filter(t=>t.memberId===m.id);
+    const done=mT.filter(t=>t.status==="done").length;
+    const sup=supervisors.find(s=>s.id===m.supervisorId);
+    return[m.name,sup?.supervisionName||"—",m.school||"—",m.phone||"—",mT.length,done,
+      mT.filter(t=>t.status==="in_progress").length,mT.filter(t=>t.status==="pending").length,
+      mT.filter(t=>isOverdue(t)).length,mT.length?Math.round(done/mT.length*100)+"%":"0%"];
+  }).sort((a,b)=>b[5]-a[5]);
+  XLSX.utils.book_append_sheet(wb,buildStyledSheet(["الاسم","التوجيه","المدرسة / الجهة","رقم الهاتف","إجمالي المهام","المنجزة","جاري","لم تبدأ","المتأخرة","نسبة الإنجاز"],rows,[24,22,22,14,13,11,11,11,11,14]),"🧑‍🏫 الموجّهون");
+  XLSX.writeFile(wb,`تقرير_الموجهين_غرب_القاهرة_${new Date().toISOString().slice(0,10)}.xlsx`);
   showToast("تم تصدير تقرير الموجّهين 🧑‍🏫");
 }
 
-async function exportTasks() {
-  const XLSX = await loadXLSX();
-  const wb   = XLSX.utils.book_new();
-  buildCoverSheet(XLSX, wb, "تقرير المهام الكاملة");
-
-  const data = allTasks.map(t => ({
-    "عنوان المهمة":      t.title,
-    "الموجّه / الأخصائي": t.memberName || "—",
-    "التوجيه":           t.supervisorName || "—",
-    "نوع المهمة":        t.type || "—",
-    "الحالة":            t.status === "done" ? "✅ منجزة" : t.status === "in_progress" ? "🔄 جاري" : "🕓 لم تبدأ",
-    "تاريخ الاستحقاق":  formatDate(t.dueDate),
-    "متأخرة":            isOverdue(t) ? "⏰ نعم" : "لا",
-    "ملاحظات":           t.notes || "—",
-  }));
-
-  const ws = XLSX.utils.json_to_sheet(data);
-  ws["!cols"] = [30,22,25,16,14,18,10,35].map(w => ({ wch: w }));
-  styleHeader(ws, XLSX.utils.decode_range(ws["!ref"]), XLSX);
-  XLSX.utils.book_append_sheet(wb, ws, "📋 كل المهام");
-  XLSX.writeFile(wb, `تقرير_المهام_غرب_القاهرة_${new Date().toISOString().slice(0,10)}.xlsx`);
+async function exportTasks(){
+  const XLSX=await loadXLSX();const wb=XLSX.utils.book_new();
+  buildCoverSheet(XLSX,wb,"تقرير المهام الكاملة");
+  const rows=allTasks.map(t=>[t.title,t.memberName||"—",t.supervisorName||"—",t.type||"—",
+    t.status==="done"?"منجزة":t.status==="in_progress"?"جاري التنفيذ":"لم تبدأ",
+    formatDate(t.dueDate),isOverdue(t)?"نعم":"لا",t.notes||"—"]);
+  XLSX.utils.book_append_sheet(wb,buildStyledSheet(["عنوان المهمة","الموجّه / الأخصائي","التوجيه","نوع المهمة","الحالة","تاريخ الاستحقاق","متأخرة","ملاحظات"],rows,[30,22,22,14,14,16,10,30]),"📋 جميع المهام");
+  XLSX.writeFile(wb,`تقرير_المهام_غرب_القاهرة_${new Date().toISOString().slice(0,10)}.xlsx`);
   showToast("تم تصدير تقرير المهام 📋");
 }
 
-async function exportLate() {
-  const XLSX = await loadXLSX();
-  const late = allTasks.filter(t => isOverdue(t));
-  if (!late.length) { showToast("لا توجد مهام متأخرة الآن 🎉", "info"); return; }
-
-  const wb = XLSX.utils.book_new();
-  buildCoverSheet(XLSX, wb, "تقرير المهام المتأخرة");
-
-  const data = late
-    .sort((a, b) => {
-      const da = a.dueDate?.toDate ? a.dueDate.toDate() : new Date(a.dueDate);
-      const db2 = b.dueDate?.toDate ? b.dueDate.toDate() : new Date(b.dueDate);
-      return da - db2;
-    })
-    .map(t => {
-      const due  = t.dueDate?.toDate ? t.dueDate.toDate() : new Date(t.dueDate);
-      const days = Math.floor((Date.now() - due.getTime()) / 86400000);
-      return {
-        "عنوان المهمة":       t.title,
-        "الموجّه / الأخصائي": t.memberName || "—",
-        "التوجيه":            t.supervisorName || "—",
-        "نوع المهمة":         t.type || "—",
-        "تاريخ الاستحقاق":   formatDate(t.dueDate),
-        "عدد أيام التأخير":   days + " يوم",
-        "ملاحظات":            t.notes || "—",
-      };
-    });
-
-  const ws = XLSX.utils.json_to_sheet(data);
-  ws["!cols"] = [30,22,25,16,18,16,35].map(w => ({ wch: w }));
-  styleHeader(ws, XLSX.utils.decode_range(ws["!ref"]), XLSX);
-  XLSX.utils.book_append_sheet(wb, ws, "⏰ المتأخرات");
-  XLSX.writeFile(wb, `تقرير_المتأخرات_غرب_القاهرة_${new Date().toISOString().slice(0,10)}.xlsx`);
+async function exportLate(){
+  const XLSX=await loadXLSX();
+  const late=allTasks.filter(t=>isOverdue(t));
+  if(!late.length){showToast("لا توجد مهام متأخرة الآن 🎉","info");return;}
+  const wb=XLSX.utils.book_new();
+  buildCoverSheet(XLSX,wb,"تقرير المهام المتأخرة");
+  const rows=late.sort((a,b)=>{
+    const da=a.dueDate?.toDate?a.dueDate.toDate():new Date(a.dueDate);
+    const db2=b.dueDate?.toDate?b.dueDate.toDate():new Date(b.dueDate);
+    return da-db2;
+  }).map(t=>{
+    const due=t.dueDate?.toDate?t.dueDate.toDate():new Date(t.dueDate);
+    const days=Math.floor((Date.now()-due.getTime())/86400000);
+    return[t.title,t.memberName||"—",t.supervisorName||"—",t.type||"—",formatDate(t.dueDate),days,t.notes||"—"];
+  });
+  XLSX.utils.book_append_sheet(wb,buildStyledSheet(["عنوان المهمة","الموجّه / الأخصائي","التوجيه","نوع المهمة","تاريخ الاستحقاق","أيام التأخير","ملاحظات"],rows,[30,22,22,14,16,14,28]),"⏰ المتأخرات");
+  XLSX.writeFile(wb,`تقرير_المتأخرات_غرب_القاهرة_${new Date().toISOString().slice(0,10)}.xlsx`);
   showToast("تم تصدير تقرير المتأخرات ⏰");
 }
 

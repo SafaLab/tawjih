@@ -5,7 +5,7 @@ import { guardPage, logout } from "../auth.js";
 import {
   db, collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, orderBy,
 } from "../firebase-config.js";
-import { showToast, openModal, closeModal, bindModalDismiss, initials, escapeHtml, confirmAction } from "../utils.js";
+import { showToast, openModal, closeModal, bindModalDismiss, initials, escapeHtml, confirmAction, bindConfirmModal } from "../utils.js";
 
 const profile = await guardPage("supervisor");
 document.getElementById("userName").textContent = profile.name;
@@ -13,6 +13,7 @@ document.getElementById("userRole").textContent = profile.supervisionName || "م
 document.getElementById("userAvatar").textContent = initials(profile.name);
 document.getElementById("logoutBtn").addEventListener("click", logout);
 bindModalDismiss();
+bindConfirmModal();
 
 let allMembers = [];
 let allTasksCountMap = {};
