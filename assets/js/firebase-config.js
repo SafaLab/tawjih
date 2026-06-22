@@ -3,12 +3,12 @@
 // ضع قيم مشروعك من: Firebase Console > Project Settings > General > Your apps
 // ============================================
 const firebaseConfig = {
-  apiKey: "ضع_API_KEY_هنا",
-  authDomain: "ضع_PROJECT_ID.firebaseapp.com",
-  projectId: "ضع_PROJECT_ID",
-  storageBucket: "ضع_PROJECT_ID.appspot.com",
-  messagingSenderId: "ضع_SENDER_ID",
-  appId: "ضع_APP_ID",
+  apiKey: "AIzaSyAnVTXnHVXqtowhu6aI0aWtZLCGIwHqt2Y",
+  authDomain: "tawjih-69771.firebaseapp.com",
+  projectId: "tawjih-69771",
+  storageBucket: "tawjih-69771.firebasestorage.app",
+  messagingSenderId: "334272223434",
+  appId: "1:334272223434:web:ea10e0a04aa0b075ef7c33"
 };
 
 const FIREBASE_SDK_VERSION = "10.12.2";
