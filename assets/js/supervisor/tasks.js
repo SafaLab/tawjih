@@ -89,7 +89,7 @@ function renderTable(tasks) {
     const s = STATUS_LABELS[t.status] || STATUS_LABELS.pending;
     const overdue = isOverdue(t);
     return `
-    <tr>
+    <tr class="${isOverdue(t) ? 'overdue-row' : ''}">
       <td data-label="المهمة">
         <div style="font-weight:700">${escapeHtml(t.title)}</div>
         <div style="color:var(--text-dim);font-size:12px">${escapeHtml(t.type || "")}</div>
@@ -147,10 +147,23 @@ async function updateStatus(id, status) {
     if (status === "done") payload.completedAt = serverTimestamp();
     await updateDoc(doc(db, "tasks", id), payload);
     showToast(status === "done" ? "أحسنت! تم تسجيل الإنجاز ✅" : "تم تحديث الحالة");
+    // تحديث badge الحالة في الجدول بدون reload كامل
+    const row = document.querySelector(`.status-select[data-id="${id}"]`)?.closest("tr");
+    if (row) {
+      const badge = row.querySelector(".task-status-badge");
+      if (badge) {
+        const labels = { pending: "🕓 لم يبدأ", in_progress: "🔄 جاري", done: "✅ منجزة" };
+        const classes = { pending: "badge-warning", in_progress: "badge-info", done: "badge-success" };
+        badge.className = "badge task-status-badge " + (classes[status] || "");
+        badge.textContent = labels[status] || status;
+      }
+    }
   } catch (e) {
     // rollback عند الفشل
     if (taskIdx > -1) allTasks[taskIdx].status = oldStatus;
-    applyFilters();
+    // إعادة الـ select للقيمة القديمة
+    const sel = document.querySelector(`.status-select[data-id="${id}"]`);
+    if (sel) sel.value = oldStatus || "pending";
     showToast("حصل خطأ أثناء التحديث", "error");
   }
 }

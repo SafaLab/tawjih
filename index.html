@@ -24,24 +24,14 @@
   padding: 24px;
 }
 
-/* دوائر خلفية زخرفية */
-.login-bg::before {
-  content: '';
-  position: absolute;
-  width: 600px; height: 600px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(46,111,242,0.08) 0%, transparent 70%);
-  top: -200px; right: -150px;
+/* Canvas الخلفية المتحركة */
+#bgCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-}
-.login-bg::after {
-  content: '';
-  position: absolute;
-  width: 400px; height: 400px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 70%);
-  bottom: -100px; left: -100px;
-  pointer-events: none;
+  z-index: 0;
 }
 
 .login-card {
@@ -52,6 +42,7 @@
   width: 100%;
   max-width: 420px;
   position: relative;
+  z-index: 1;
   box-shadow: 0 20px 60px rgba(20,30,60,0.12), 0 4px 16px rgba(20,30,60,0.06);
   animation: slideUp .4s cubic-bezier(.16,1,.3,1);
 }
@@ -102,9 +93,7 @@
   line-height: 1.5;
 }
 
-.login-field {
-  margin-bottom: 18px;
-}
+.login-field { margin-bottom: 18px; }
 
 .login-field label {
   display: block;
@@ -114,9 +103,7 @@
   margin-bottom: 8px;
 }
 
-.login-input-wrap {
-  position: relative;
-}
+.login-input-wrap { position: relative; }
 
 .login-input-wrap .input-icon {
   position: absolute;
@@ -196,7 +183,6 @@
   justify-content: center;
   gap: 6px;
 }
-
 .login-footer::before, .login-footer::after {
   content: '';
   flex: 1;
@@ -219,7 +205,6 @@
 }
 .theme-btn-login:hover { background: var(--card-hover); }
 
-/* Spinner داخل الزرار */
 .btn-spinner {
   display: inline-block;
   width: 16px; height: 16px;
@@ -234,6 +219,8 @@
 </style>
 </head>
 <body>
+
+<canvas id="bgCanvas"></canvas>
 
 <div id="loader" class="app-loader">
   <div class="spinner"></div>
@@ -275,6 +262,120 @@
     <div class="login-footer">الحسابات تُضاف من المدير العام فقط</div>
   </div>
 </div>
+
+<script>
+// ===== خلفية متحركة ناعمة — تتكيف مع الـ dark/light mode =====
+(function () {
+  const canvas = document.getElementById("bgCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+
+  let W, H, particles = [], animId;
+  const COUNT = 28;
+
+  // قراءة لون الخلفية من CSS variable
+  function getBgColor() {
+    return getComputedStyle(document.documentElement)
+      .getPropertyValue("--primary").trim() || "#2E6FF2";
+  }
+
+  function hexToRgb(hex) {
+    hex = hex.replace("#", "");
+    if (hex.length === 3) hex = hex.split("").map(h => h + h).join("");
+    const n = parseInt(hex, 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  }
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function randomParticle() {
+    return {
+      x:     Math.random() * W,
+      y:     Math.random() * H,
+      r:     Math.random() * 80 + 30,        // نصف قطر: 30–110px
+      vx:    (Math.random() - 0.5) * 0.25,   // سرعة أفقية ناعمة
+      vy:    (Math.random() - 0.5) * 0.18,   // سرعة رأسية ناعمة
+      alpha: Math.random() * 0.06 + 0.02,    // شفافية: 2%–8% (هادية جداً)
+      phase: Math.random() * Math.PI * 2,    // للتنفس (نبض خفي)
+      speed: Math.random() * 0.008 + 0.003,  // سرعة النبض
+    };
+  }
+
+  function init() {
+    resize();
+    particles = Array.from({ length: COUNT }, randomParticle);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    const rgb = hexToRgb(getBgColor());
+    // لون ثاني - بنفسجي ناعم
+    const rgb2 = { r: 124, g: 58, b: 237 };
+
+    particles.forEach((p, i) => {
+      // نبض ناعم
+      p.phase += p.speed;
+      const pulsedR = p.r * (0.92 + 0.08 * Math.sin(p.phase));
+      const pulsedA = p.alpha * (0.8 + 0.2 * Math.sin(p.phase + 1));
+
+      // تبديل اللون بين الأزرق والبنفسجي حسب الـ index
+      const { r, g, b } = i % 3 === 0 ? rgb2 : rgb;
+
+      // gradient داخل الدائرة (أكثر نعومة)
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, pulsedR);
+      grad.addColorStop(0, `rgba(${r},${g},${b},${pulsedA})`);
+      grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, pulsedR, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // حركة
+      p.x += p.vx;
+      p.y += p.vy;
+
+      // ارتداد ناعم من الحواف (مش اختفاء مفاجئ)
+      if (p.x < -p.r)   p.x = W + p.r;
+      if (p.x > W + p.r) p.x = -p.r;
+      if (p.y < -p.r)   p.y = H + p.r;
+      if (p.y > H + p.r) p.y = -p.r;
+    });
+
+    animId = requestAnimationFrame(draw);
+  }
+
+  // إيقاف الـ animation لو الصفحة مش ظاهرة (توفير battery)
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      cancelAnimationFrame(animId);
+    } else {
+      draw();
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    resize();
+    particles.forEach(p => {
+      if (p.x > W) p.x = Math.random() * W;
+      if (p.y > H) p.y = Math.random() * H;
+    });
+  });
+
+  // مراقبة تغيير الثيم لتحديث الألوان تلقائياً
+  const observer = new MutationObserver(() => {
+    // الألوان بتتحدث تلقائياً لأننا بنقرأ من CSS var في كل frame
+  });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  init();
+  draw();
+})();
+</script>
 
 <script type="module">
   import { login, redirectByRole, getUserProfile } from "./assets/js/auth.js";

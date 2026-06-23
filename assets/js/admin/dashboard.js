@@ -607,4 +607,24 @@ document.getElementById("editSupervisorForm").addEventListener("submit", async (
 });
 
 
+// كشف loadAll للـ global scope (مطلوب لزرار الـ refresh في HTML)
+window.loadAll = loadAll;
+
+// ربط زرار الـ refresh مباشرة بدون DOMContentLoaded (المحتوى محمّل مع ES Module)
+function bindRefreshBtn() {
+  const refreshBtn = document.querySelector("[data-refresh-admin]");
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", async () => {
+      refreshBtn.disabled = true;
+      const orig = refreshBtn.innerHTML;
+      refreshBtn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid var(--primary);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite"></span>';
+      await loadAll();
+      refreshBtn.disabled = false;
+      refreshBtn.innerHTML = orig;
+      showToast("تم تحديث البيانات ✅");
+    });
+  }
+}
+
+bindRefreshBtn();
 loadAll();
