@@ -309,7 +309,9 @@
         <h1>📈 نظرة شاملة على كل التوجيهات</h1>
         <p>إدارة غرب القاهرة التعليمية — متابعة الأداء</p>
       </div>
-      <div class="topbar-actions">
+      <div class="topbar-actions" style="display:flex;align-items:center;gap:10px">
+        <span id="lastRefreshAdmin" style="font-size:11px;color:var(--text-faint)"></span>
+        <button onclick="loadAll()" class="btn btn-secondary btn-sm" title="تحديث">🔄</button>
         <button class="theme-toggle" id="themeToggle" aria-label="تبديل الثيم"></button>
         <button class="btn btn-primary" id="addSupervisorBtn">➕ إضافة مسؤول توجيه</button>
       </div>

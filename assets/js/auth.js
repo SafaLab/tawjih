@@ -62,8 +62,9 @@ export async function getUserProfile(uid) {
  */
 export function guardPage(requiredRole) {
   return new Promise((resolve) => {
-    onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
+        unsubscribe(); // cleanup listener
         window.location.href = `${BASE}/index.html`;
         return;
       }
@@ -71,15 +72,18 @@ export function guardPage(requiredRole) {
       if (!profile) {
         showToast("الحساب غير مُفعّل، تواصل مع المدير العام", "error");
         await signOut(auth);
+        unsubscribe();
         window.location.href = `${BASE}/index.html`;
         return;
       }
       if (requiredRole && profile.role !== requiredRole) {
+        unsubscribe();
         window.location.href = profile.role === "admin"
           ? `${BASE}/pages/admin-dashboard.html`
           : `${BASE}/pages/supervisor-dashboard.html`;
         return;
       }
+      unsubscribe(); // cleanup بعد نجاح التحقق
       resolve({ uid: user.uid, ...profile });
     });
   });

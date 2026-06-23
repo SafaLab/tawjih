@@ -62,9 +62,15 @@ async function loadTasks() {
 function applyFilters() {
   const statusVal = document.getElementById("filterStatus").value;
   const memberVal = document.getElementById("filterMember").value;
+  const searchVal = (document.getElementById("searchTasks")?.value || "").trim().toLowerCase();
   let filtered = allTasks;
   if (statusVal) filtered = filtered.filter((t) => t.status === statusVal);
   if (memberVal) filtered = filtered.filter((t) => t.memberId === memberVal);
+  if (searchVal) filtered = filtered.filter((t) =>
+    (t.title || "").toLowerCase().includes(searchVal) ||
+    (t.memberName || "").toLowerCase().includes(searchVal) ||
+    (t.type || "").toLowerCase().includes(searchVal)
+  );
   renderTable(filtered);
 }
 
@@ -117,13 +123,34 @@ function renderTable(tasks) {
 }
 
 async function updateStatus(id, status) {
+  // تأكيد قبل تحديد المهمة كمنجزة
+  if (status === "done") {
+    const t = allTasks.find(x => x.id === id);
+    const ok = await confirmAction(
+      "تأكيد الإنجاز ✅",
+      `هل تأكدت من إنجاز مهمة "${t?.title || 'هذه المهمة'}"؟`
+    );
+    if (!ok) {
+      // إعادة الـ select للقيمة القديمة
+      const sel = document.querySelector(`.status-select[data-id="${id}"]`);
+      if (sel) sel.value = t?.status || "pending";
+      return;
+    }
+  }
+  // Optimistic update - تحديث الـ UI فوراً
+  const taskIdx = allTasks.findIndex(x => x.id === id);
+  const oldStatus = allTasks[taskIdx]?.status;
+  if (taskIdx > -1) allTasks[taskIdx].status = status;
+
   try {
     const payload = { status };
     if (status === "done") payload.completedAt = serverTimestamp();
     await updateDoc(doc(db, "tasks", id), payload);
-    showToast("تم تحديث حالة المهمة");
-    loadTasks();
+    showToast(status === "done" ? "أحسنت! تم تسجيل الإنجاز ✅" : "تم تحديث الحالة");
   } catch (e) {
+    // rollback عند الفشل
+    if (taskIdx > -1) allTasks[taskIdx].status = oldStatus;
+    applyFilters();
     showToast("حصل خطأ أثناء التحديث", "error");
   }
 }
@@ -214,6 +241,9 @@ document.getElementById("taskForm").addEventListener("submit", async (e) => {
 
 document.getElementById("filterStatus").addEventListener("change", applyFilters);
 document.getElementById("filterMember").addEventListener("change", applyFilters);
+
+// بحث نصي في المهام
+document.getElementById("searchTasks")?.addEventListener("input", applyFilters);
 
 await loadMembers();
 loadTasks();

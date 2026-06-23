@@ -5,7 +5,7 @@ import { guardPage, logout } from "../auth.js";
 import {
   db, collection, query, where, getDocs, orderBy,
 } from "../firebase-config.js";
-import { formatDate, timeAgo, STATUS_LABELS, isOverdue, initials } from "../utils.js";
+import { formatDate, timeAgo, STATUS_LABELS, isOverdue, initials, showToast, bindSidebarToggle } from "../utils.js";
 
 const profile = await guardPage("supervisor");
 document.getElementById("userName").textContent = profile.name;
@@ -14,6 +14,24 @@ document.getElementById("userAvatar").textContent = initials(profile.name);
 document.getElementById("pageGreeting").textContent = `أهلاً بيك يا ${profile.name} 👋`;
 
 document.getElementById("logoutBtn").addEventListener("click", logout);
+bindSidebarToggle();
+
+// زرار refresh
+document.getElementById("refreshBtn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("refreshBtn");
+  btn.disabled = true;
+  btn.textContent = "⏳";
+  await loadDashboard();
+  btn.disabled = false;
+  btn.textContent = "🔄";
+  showToast("تم تحديث البيانات");
+  updateLastRefresh();
+});
+
+function updateLastRefresh() {
+  const el = document.getElementById("lastRefresh");
+  if (el) el.textContent = "آخر تحديث: " + new Date().toLocaleTimeString("ar-EG");
+}
 
 async function loadDashboard() {
   const membersQ = query(collection(db, "members"), where("supervisorId", "==", profile.uid));
@@ -34,10 +52,21 @@ async function loadDashboard() {
   const late = tasks.filter((t) => isOverdue(t)).length;
   const inProgress = tasks.filter((t) => t.status === "in_progress").length;
 
+  // مهام اليوم
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const todayEnd   = new Date(); todayEnd.setHours(23,59,59,999);
+  const todayTasks = tasks.filter(t => {
+    if (!t.dueDate) return false;
+    const d = t.dueDate?.toDate ? t.dueDate.toDate() : new Date(t.dueDate);
+    return d >= todayStart && d <= todayEnd && t.status !== "done";
+  });
+
   document.getElementById("statMembers").textContent = members.length;
-  document.getElementById("statTasks").textContent = tasks.length;
-  document.getElementById("statDone").textContent = done;
-  document.getElementById("statLate").textContent = late;
+  document.getElementById("statTasks").textContent   = tasks.length;
+  document.getElementById("statDone").textContent    = done;
+  document.getElementById("statLate").textContent    = late;
+  const todayEl = document.getElementById("statToday");
+  if (todayEl) todayEl.textContent = todayTasks.length;
 
   renderLeaderboard(members, tasks);
   renderRecentTasks(tasks.slice(0, 8));
@@ -95,4 +124,4 @@ function renderRecentTasks(tasks) {
   }).join("");
 }
 
-loadDashboard();
+loadDashboard().then(updateLastRefresh);

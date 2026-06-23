@@ -23,20 +23,34 @@ let allTasks = [];
 
 // ===== تحميل البيانات =====
 async function loadAll() {
-  const [usersSnap, membersSnap, tasksSnap] = await Promise.all([
-    getDocs(query(collection(db, "users"), where("role", "==", "supervisor"))),
-    getDocs(collection(db, "members")),
-    getDocs(collection(db, "tasks")),
-  ]);
+  // إظهار loading في الجدول
+  const tbody = document.getElementById("supervisorsBody");
+  if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-dim)"><div class="spinner" style="margin:0 auto 12px"></div>جاري تحميل البيانات...</td></tr>`;
 
-  supervisors = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  allMembers  = membersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  allTasks    = tasksSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  try {
+    const [usersSnap, membersSnap, tasksSnap] = await Promise.all([
+      getDocs(query(collection(db, "users"), where("role", "==", "supervisor"))),
+      getDocs(collection(db, "members")),
+      getDocs(collection(db, "tasks")),
+    ]);
+
+    supervisors = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    allMembers  = membersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    allTasks    = tasksSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (e) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--danger)">⚠️ حصل خطأ في تحميل البيانات — <button onclick="loadAll()" class="btn btn-sm btn-secondary">إعادة المحاولة</button></td></tr>`;
+    showToast("حصل خطأ في تحميل البيانات", "error");
+    return;
+  }
 
   renderStats();
   renderSupervisors();
   renderLeaderboard();
   renderLateTasks();
+
+  // تحديث وقت آخر refresh
+  const ts = document.getElementById("lastRefreshAdmin");
+  if (ts) ts.textContent = "آخر تحديث: " + new Date().toLocaleTimeString("ar-EG");
 }
 
 // ===== الإحصاءات =====

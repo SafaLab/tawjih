@@ -54,7 +54,9 @@
         <h1 id="pageGreeting">أهلاً بيك 👋</h1>
         <p>نظرة سريعة على أداء فريقك اليوم</p>
       </div>
-      <div class="topbar-actions">
+      <div class="topbar-actions" style="display:flex;align-items:center;gap:10px">
+        <span id="lastRefresh" style="font-size:11px;color:var(--text-faint)"></span>
+        <button id="refreshBtn" class="btn btn-secondary btn-sm" title="تحديث البيانات">🔄</button>
         <button class="theme-toggle" id="themeToggle" aria-label="تبديل الثيم"></button>
       </div>
     </div>
@@ -74,6 +76,11 @@
         <span class="emoji">✅</span>
         <div class="num" id="statDone">0</div>
         <div class="lbl">مهام منجزة</div>
+      </div>
+      <div class="stat-card accent">
+        <span class="emoji">📅</span>
+        <div class="num" id="statToday">0</div>
+        <div class="lbl">مهام اليوم</div>
       </div>
       <div class="stat-card accent">
         <span class="emoji">⏰</span>
